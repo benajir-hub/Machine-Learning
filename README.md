@@ -58,6 +58,7 @@ This repository contains all my practical experience in Machine Learning. I try 
 * [Pandas](https://pandas.pydata.org/)
 * [Matplotlib](https://matplotlib.org/)
 * [Scikit-learn](https://scikit-learn.org/stable/)
+* [SciPy](https://scipy.org/)
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -108,8 +109,10 @@ Project Link: [Machine Learning](https://github.com/benajir-hub/Machine-Learning
 Use this space to list resources you find helpful and would like to give credit to. I've included a few of my favorites to kick things off!
 
 * [Udemy](https://www.udemy.com/course/machinelearning/)
-* [GitHub Cheat Sheet](https://education.github.com/git-cheat-sheet-education.pdf)
 * [Javatpoint](https://www.javatpoint.com/machine-learning)
+* [SuperDataScience](https://www.superdatascience.com/)
+* [GitHub Cheat Sheet](https://education.github.com/git-cheat-sheet-education.pdf)
+
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
