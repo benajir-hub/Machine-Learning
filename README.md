@@ -1,7 +1,7 @@
 <br />
 <div align="center">
-  <a href="https://github.com/benajir-hub/Machine-Learning">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+  
+    
   </a>
 
   <h3 align="center">Machine Learning</h3>
@@ -32,10 +32,6 @@
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
@@ -96,7 +92,9 @@ This repository contains all my practical experience in Machine Learning. I try 
 <!-- CONTACT -->
 ## Contact
 
-Md. Benajir Ullah Shuvo - [Md. Benajir Ullah Shuvo](https://www.linkedin.com/in/md-benajir-ullah-shuvo-388bb2ab/) - benajir.shuvo@gmail.com
+Md. Benajir Ullah Shuvo
+Linkedin- [Md. Benajir Ullah Shuvo](https://www.linkedin.com/in/md-benajir-ullah-shuvo-388bb2ab/) 
+Email- benajir.shuvo@gmail.com
 
 Project Link: [Machine Learning](https://github.com/benajir-hub/Machine-Learning)
 
@@ -109,7 +107,7 @@ Project Link: [Machine Learning](https://github.com/benajir-hub/Machine-Learning
 
 Use this space to list resources you find helpful and would like to give credit to. I've included a few of my favorites to kick things off!
 
-* [Udemy](https://www.udemy.com/course/machinelearning/learn/lecture/19509918?start=735#questions)
+* [Udemy](https://www.udemy.com/course/machinelearning/)
 * [GitHub Cheat Sheet](https://education.github.com/git-cheat-sheet-education.pdf)
 
 
