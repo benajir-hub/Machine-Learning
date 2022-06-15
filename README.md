@@ -109,6 +109,7 @@ Use this space to list resources you find helpful and would like to give credit 
 
 * [Udemy](https://www.udemy.com/course/machinelearning/)
 * [GitHub Cheat Sheet](https://education.github.com/git-cheat-sheet-education.pdf)
+* [Javatpoint](https://www.javatpoint.com/machine-learning)
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
