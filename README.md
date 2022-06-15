@@ -92,7 +92,7 @@ This repository contains all my practical experience in Machine Learning. I try 
 <!-- CONTACT -->
 ## Contact
 
-Md. Benajir Ullah Shuvo
+
 Linkedin- [Md. Benajir Ullah Shuvo](https://www.linkedin.com/in/md-benajir-ullah-shuvo-388bb2ab/) 
 Email- benajir.shuvo@gmail.com
 
