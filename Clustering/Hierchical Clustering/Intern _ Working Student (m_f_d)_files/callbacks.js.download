@@ -1,0 +1,30 @@
+var adaptSegmentChoices = function (event, wasTriggered) {
+    var $industrySelect = $(this);
+    var parentIndustryGroup = $industrySelect.find('option:selected').data('group');
+    var $segmentsContainer = $industrySelect.parents('.row').find('.industry-segment');
+
+    if (parentIndustryGroup) {
+        $segmentsContainer.show();
+
+        $industrySelect.closest('.col-xs-12').removeClass('col-sm-9 col-sm-12').addClass($industrySelect.data('class-to-add'));
+
+        $segmentsContainer.find('option').attr('disabled', true).hide();
+        $segmentsContainer.find('option[data-group="' + parentIndustryGroup + '"]').attr('disabled', false).show();
+
+        var $segmentsSelect = $segmentsContainer.find('select');
+
+        if ($segmentsSelect.hasClass('select2-hidden-accessible')) {
+            if (!wasTriggered) {
+                $segmentsSelect.select2('val', ''); // Clear the old value.
+            }
+
+            $segmentsSelect
+                .select2('destroy') // Destroy the select2.
+                .select2({theme: 'bootstrap', allowClear: true}); // Reinstanciate it.
+        } else if (!wasTriggered) {
+            $segmentsSelect.val('');
+        }
+    } else {
+        $segmentsContainer.hide();
+    }
+};

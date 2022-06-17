@@ -1,0 +1,610 @@
+var Autocomplete = Autocomplete || (function () {
+    var defaultSettings = function ($autocomplete, $infoDiv, autocompleteUrl) {
+        return {
+            appendTo: $autocomplete.parent().parent(),
+            open: function () {
+                $infoDiv.hide();
+            },
+            source: function (request, response) {
+                $.ajax({
+                    contentType: 'application/json',
+                    crossDomain: false,
+                    url: autocompleteUrl,
+                    dataType: 'json',
+                    data: {
+                        name: request.term
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        // TODO: show alert bar on error.
+                    },
+                    success: function (data) {
+                        var predictions;
+                        predictions = $.map(data.predictions, function (item) {
+                            return {
+                                value: item.description,
+                                id: item.place_id
+                            };
+                        });
+
+                        if (!predictions || typeof predictions === 'undefined' || predictions === '' || predictions.length === 0) {
+                            response($.map($.makeArray({
+                                label: $autocomplete.data('txt-noresults'),
+                                value: 0
+                            }), function (item) {
+                                return item;
+                            }));
+
+                        } else {
+                            response(predictions);
+                        }
+                    }
+                });
+            },
+            minLength: 3,
+            select: function (event, ui) {
+            },
+            focus: function (event, ui) {
+            },
+            delay: 500
+        }
+    };
+
+    var init = function () {
+        $('.city-widget').each(function () {
+            city($(this).data('id'));
+        });
+
+        $('.street-widget').each(function () {
+            street($(this).data('id'));
+        });
+
+        $('.school-widget').each(function () {
+            school($(this).data('id'));
+        });
+
+        $('.degree-subject-widget').each(function () {
+            degreeOrSubject($(this).data('id'));
+        });
+    };
+
+    var initMembers = function (id) {
+        var $infoDiv = $('#' + id + '_info');
+        var $autocomplete = $('#' + id + '_name');
+
+        var autocompleteUrl = $autocomplete.data('autocomplete-url');
+
+        // Move the results div one layer up to prevent styling issues.
+        $infoDiv.insertAfter($autocomplete.parent());
+
+        $autocomplete.on('blur', function () {
+            $infoDiv.hide();
+        });
+
+        return {
+            $infoDiv: $infoDiv,
+            $autocomplete: $autocomplete,
+            autocompleteUrl: autocompleteUrl
+        }
+    };
+
+
+    var _renderItem = function (ul, item) {
+        if (!item.id) {
+            return $('<li class="ui-state-disabled"><span style="color: #333">' + item.label + '</span></li>').appendTo(ul);
+        } else {
+            return $('<li>').append("<a>" + item.label + "</a>").appendTo(ul);
+        }
+    };
+
+    var city = function (id) {
+
+        var members = initMembers(id);
+
+        var $form = members.$autocomplete.closest('form');
+
+        var $autocomplete = members.$autocomplete;
+        var $googleIdField = $form.find('[name*="googleId"]');
+        var autocompleteVal = $autocomplete.val();
+        var idFieldVal = $googleIdField.val();
+        var $infoDiv = members.$infoDiv;
+        var autocompleteUrl = members.autocompleteUrl;
+
+        var $countryField = $form.find('[name*="country"]');
+
+        $autocomplete.keyup(function (event) {
+            var keyCode = parseInt(event.keyCode ? event.keyCode : event.which);
+            var input = String.fromCharCode(keyCode);
+
+            if (/[a-zA-Z0-9-_ ]/.test(input) || keyCode === 8) {
+                if ($autocomplete.val() === '') {
+                    $infoDiv.hide();
+                } else {
+                    if ($autocomplete.val().length < 3) {
+                        $infoDiv.html($autocomplete.data('txt-minlength'));
+                        $infoDiv.show();
+                    } else {
+                        $infoDiv.html('<i class="icon-spinner icon-spin"></i> ' + $autocomplete.data('txt-loading'));
+                        $infoDiv.show();
+                    }
+                }
+            }
+        });
+
+        $autocomplete.change(function () {
+            if ($autocomplete.val() !== autocompleteVal && idFieldVal === $googleIdField.val()) {
+                $googleIdField.val('');
+            }
+        });
+
+        var settings = defaultSettings($autocomplete, $infoDiv, autocompleteUrl);
+        settings.source = function (request, response) {
+            $.ajax({
+                contentType: 'application/json',
+                crossDomain: false,
+                url: autocompleteUrl,
+                dataType: 'json',
+                data: {
+                    name: request.term
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    // TODO: show alert bar on error.
+                },
+                success: function (data) {
+                    var predictions = $.map(data.predictions, function (item) {
+                        return {
+                            value: item.description,
+                            id: item.place_id
+                        };
+                    });
+
+                    if (!predictions || typeof predictions === 'undefined' || predictions === '' || predictions.length === 0) {
+                        response($.map($.makeArray({
+                            value: $autocomplete.data('txt-noresults'),
+                            id: 0
+                        }), function (item) {
+                            return item;
+                        }));
+
+                    } else {
+                        response(predictions);
+                    }
+                }
+            })
+        };
+
+        settings.select = function (event, ui) {
+            if ($googleIdField.length > 0) {
+                $googleIdField.val(ui.item.id);
+            }
+
+            // Prevent the plugin from writing the chosen place name directly into the city field, as we want to show a loading text.
+            event.preventDefault();
+            $autocomplete.val($autocomplete.data('txt-loading'));
+
+            $.ajax({
+                contentType: 'application/json',
+                crossDomain: false,
+                url: $autocomplete.data('getplace-url'),
+                dataType: 'json',
+                data: {
+                    placeId: ui.item.id
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+
+                },
+                success: function (data) {
+                    var place = data;
+
+                    if (place.result) {
+                        $.each(place.result.address_components, function(index, component) {
+                            if ($autocomplete.length > 0
+                                &&
+                                (
+                                    $.inArray('sublocality', component.types) !== -1 ||
+                                    $.inArray('locality', component.types) !== -1 ||
+                                    $.inArray('postal_town', component.types) !== -1
+                                )
+                            ) {
+
+                                if (!$autocomplete.val() || $autocomplete.val() === $autocomplete.data('txt-loading')) {
+                                    $autocomplete.val(component.long_name);
+                                }
+
+                            }
+
+                            if ($countryField.length > 0 && $.inArray('country', component.types) !== -1) {
+                                if ($countryField.data('select2')) {
+                                    $countryField.select2('val', component.short_name);
+                                }
+                                $countryField.val(component.short_name).trigger('change');
+                            }
+                        });
+                    }
+                }
+            });
+        };
+
+        settings.focus = function (event, ui) {
+            $googleIdField.val(ui.item.id);
+        };
+
+        $autocomplete.autocomplete(settings).data('ui-autocomplete')._renderItem = _renderItem;
+    };
+
+    var street = function (id) {
+        var members = initMembers(id);
+
+        var $autocomplete = members.$autocomplete;
+        var $infoDiv = members.$infoDiv;
+        var autocompleteUrl = members.autocompleteUrl;
+
+        var $form = $autocomplete.closest('form');
+
+        var $zipField = $form.find('[name*="zipCode"]');
+        var $cityField = $form.find('[name*="[city][name]"]');
+        var $cityAutocomplete = $form.find('[id*="city_autocomplete"]');
+        if ($cityAutocomplete.length > 0) {
+            $cityField = $cityAutocomplete;
+        }
+        var $countryField = $form.find('[name*="country"]');
+
+        // Move the results div one layer up to prevent styling issues.
+        $infoDiv.insertAfter($autocomplete.parent());
+
+        $autocomplete.keyup(function (event) {
+            var keyCode = parseInt(event.keyCode ? event.keyCode : event.which);
+            var input = String.fromCharCode(keyCode);
+
+            if (/[a-zA-Z0-9-_ ]/.test(input) || keyCode === 8) {
+                if ($autocomplete.val() === '') {
+                    $infoDiv.hide();
+                } else {
+                    if ($autocomplete.val().length < 3) {
+                        $infoDiv.html($autocomplete.data('txt-minlength'));
+                        $infoDiv.show();
+                    } else {
+                        $infoDiv.html('<i class="icon-spinner icon-spin"></i> ' + $autocomplete.data('txt-loading'));
+                        $infoDiv.show();
+                    }
+                }
+            }
+        });
+
+        var settings = defaultSettings($autocomplete, $infoDiv, autocompleteUrl);
+        settings.source = function (request, response) {
+            $.ajax({
+                contentType: 'application/json',
+                crossDomain: false,
+                url: autocompleteUrl,
+                dataType: 'json',
+                data: {
+                    name: request.term
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    // TODO: show alert bar on error.
+                },
+                success: function (data) {
+                    var predictions;
+
+                    predictions = $.map(data.predictions, function (item) {
+                        return {
+                            value: item.description,
+                            id: item.place_id,
+                            main_text: item.structured_formatting.main_text
+                        };
+                    });
+
+                    if (!predictions || typeof predictions === 'undefined' || predictions === '' || predictions.length === 0) {
+                        response($.map($.makeArray({
+                            label: $autocomplete.data('txt-noresults'),
+                            value: 0
+                        }), function (item) {
+                            return item;
+                        }));
+
+                    } else {
+                        response(predictions);
+                    }
+                }
+            })
+        };
+
+        settings.select = function (event, ui) {
+            event.preventDefault();
+
+            $cityField.val($autocomplete.data('txt-loading'));
+            $zipField.val($autocomplete.data('txt-loading'));
+            $autocomplete.val($autocomplete.data('txt-loading'));
+
+            $.ajax({
+                contentType: 'application/json',
+                crossDomain: false,
+                url: $autocomplete.data('getplace-url'),
+                dataType: 'json',
+                data: {
+                    placeId: ui.item.id
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+
+                },
+                success: function (data) {
+                    var place = data;
+
+                    if (place.result) {
+                        $.each(place.result.address_components, function(index, component) {
+                            if ($cityField.length > 0 && ($.inArray('sublocality', component.types) !== -1 || $.inArray('locality', component.types) !== -1 || $.inArray('postal_town', component.types) !== -1)) {
+                                $cityField.val(component.long_name);
+                            }
+
+                            if ($zipField.length > 0 && $.inArray('postal_code', component.types) !== -1) {
+                                $zipField.val(component.long_name);
+                            }
+
+                            if ($countryField.length > 0 && $.inArray('country', component.types) !== -1) {
+                                if ($countryField.data('select2')) {
+                                    $countryField.select2('val', component.short_name);
+                                }
+                                $countryField.val(component.short_name).trigger('change');
+                            }
+                        });
+
+                        $autocomplete.val(ui.item.main_text);
+                    }
+
+                    // Reset the field value if no value has been set from the place result.
+                    if ($cityField.val() === $autocomplete.data('txt-loading')) {
+                        $cityField.val('');
+                    }
+
+                    // Reset the field value if no value has been set from the place result.
+                    if ($zipField.val() === $autocomplete.data('txt-loading')) {
+                        $zipField.val('');
+                    }
+                }
+            });
+        };
+
+        settings.focus = function (event, ui) {
+
+        };
+
+        $autocomplete.autocomplete(settings).data('ui-autocomplete')._renderItem = _renderItem;
+    };
+
+    var school = function (id) {
+        var members = initMembers(id);
+
+        var $autocomplete = members.$autocomplete;
+        var $infoDiv = members.$infoDiv;
+        var autocompleteUrl = members.autocompleteUrl;
+
+        var $form = $autocomplete.closest('form');
+        var $idField = $form.find('#' + id);
+
+        var newStubLink = $autocomplete.data('newstub');
+        var newStubTxt = $autocomplete.data('newstub-text');
+
+        $autocomplete.keyup(function (event) {
+            var keyCode = parseInt(event.keyCode ? event.keyCode : event.which);
+            var input = String.fromCharCode(keyCode);
+
+            if (/[a-zA-Z0-9-_ ]/.test(input) || keyCode === 8) {
+                if ($autocomplete.val() === '') {
+                    $infoDiv.hide();
+                } else {
+                    if ($autocomplete.val().length < 3) {
+                        $infoDiv.html($autocomplete.data('txt-minlength'));
+                        $infoDiv.show();
+                    } else {
+                        $infoDiv.html('<i class="icon-spinner icon-spin"></i> ' + $autocomplete.data('txt-loading'));
+                        $infoDiv.show();
+                    }
+                }
+            }
+        });
+
+        var settings = defaultSettings($autocomplete, $infoDiv, autocompleteUrl);
+        var $addLink;
+
+        settings.open = function () {
+            $infoDiv.hide();
+
+            var requestTerm = $autocomplete.val();
+
+            $addLink = $('<li><a href="#" class="ui-corner-all autocomplete_add" data-nsload="' + newStubLink + '&origin=modal" data-value="' + escapeHtml(requestTerm) + '"><i class="icon-spinner icon-spin icon-2x pull-right"></i><i class="icon-caret-right"></i> ' + newStubTxt + ': ' + escapeHtml(requestTerm) + '</a></li>');
+            $('ul.ui-autocomplete').append($addLink);
+
+            $form.find('.autocomplete_add').on('click', function (event) {
+                var $this = $(this);
+                $this.addClass('active');
+
+                $.post($this.data('nsload'), {name: $this.data('value')}, function (data) {
+                    $this.removeClass('active');
+                    var $appendHolder = $this.parents('.new-stub-replace:first');
+
+                    $form.hide();
+                    $appendHolder.append(data);
+
+                    $appendHolder.find('select:not(.hidden)').each(function () {
+                        $(this).select2({
+                            theme: "bootstrap",
+                            allowClear: !$(this).attr('required'),
+                            disabled: $(this).parent().hasClass('disabled')
+                        });
+                    });
+                });
+
+                return false;
+            });
+        };
+
+        settings.source = function (request, response) {
+            $.ajax({
+                contentType: 'application/json',
+                crossDomain: false,
+                url: autocompleteUrl,
+                dataType: 'json',
+                data: {
+                    name: request.term
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    // TODO: show alert bar on error.
+                },
+                success: function (data) {
+                    var predictions;
+
+                    predictions = $.map(data, function (item) {
+                        return {
+                            value: item.title,
+                            id: item.id
+                        };
+                    });
+
+                    if (!predictions || typeof predictions === 'undefined' || predictions === '' || predictions.length === 0) {
+                        response($.map($.makeArray({
+                            value: $autocomplete.data('txt-noresults'),
+                            id: 0
+                        }), function (item) {
+                            return item;
+                        }));
+                    } else {
+                        response(predictions);
+                    }
+                }
+            })
+        };
+
+        settings.focus = function (event, ui) {
+        };
+
+        settings.select = function (event, ui) {
+            if (ui && ui.item && ui.item.id > 0) {
+                $idField.val(ui.item.id);
+            }
+        };
+
+        $autocomplete.autocomplete(settings).data('ui-autocomplete')._renderItem = _renderItem;
+    };
+
+    var degreeOrSubject = function (id) {
+        var members = initMembers(id);
+
+        var $autocomplete = members.$autocomplete;
+        var $infoDiv = members.$infoDiv;
+        var autocompleteUrl = members.autocompleteUrl;
+
+        var $form = $autocomplete.closest('form');
+        var $idField = $form.find('#' + id);
+
+        var newStubLink = $autocomplete.data('newstub');
+        var newStubTxt = $autocomplete.data('newstub-text');
+
+        $autocomplete.keyup(function (event) {
+            var keyCode = parseInt(event.keyCode ? event.keyCode : event.which);
+            var input = String.fromCharCode(keyCode);
+
+            if (/[a-zA-Z0-9-_ ]/.test(input) || keyCode === 8) {
+                if ($autocomplete.val() === '') {
+                    $infoDiv.hide();
+                } else {
+                    if ($autocomplete.val().length < 3) {
+                        $infoDiv.html($autocomplete.data('txt-minlength'));
+                        $infoDiv.show();
+                    } else {
+                        $infoDiv.html('<i class="icon-spinner icon-spin"></i> ' + $autocomplete.data('txt-loading'));
+                        $infoDiv.show();
+                    }
+                }
+            }
+        });
+
+        var settings = defaultSettings($autocomplete, $infoDiv, autocompleteUrl);
+
+        var $addLink;
+
+        settings.open = function () {
+            $infoDiv.hide();
+
+            var requestTerm = $autocomplete.val();
+
+            $addLink = $('<li><a href="#" class="ui-corner-all autocomplete_add" data-nsload="' + newStubLink + '&origin=modal" data-value="' + escapeHtml(requestTerm) + '"><i class="icon-spinner icon-spin icon-2x pull-right"></i><i class="icon-caret-right"></i> ' + newStubTxt + ': ' + escapeHtml(requestTerm) + '</a></li>');
+            $('ul.ui-autocomplete').append($addLink);
+
+            $form.find('.autocomplete_add').on('click', function (event) {
+                var $this = $(this);
+
+                $this.addClass('active');
+
+                $.post($autocomplete.data('newstub'), {'name': $autocomplete.val()}, function (data) {
+                    $this.removeClass('active');
+
+                    var degree = jQuery.parseJSON(data);
+
+                    if (degree) {
+                        $autocomplete.val(degree.title);
+                        $idField.val(degree.id);
+                    } else {
+                        // TODO: what should happen, if the degree could not be saved?
+                    }
+
+                    $('.autocomplete_wait, ul.ui-autocomplete').hide();
+                });
+            });
+        };
+
+        settings.source = function (request, response) {
+            $.ajax({
+                contentType: 'application/json',
+                crossDomain: false,
+                url: autocompleteUrl,
+                dataType: 'json',
+                data: {
+                    name: request.term
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    // TODO: show alert bar on error.
+                },
+                success: function (data) {
+                    var predictions;
+
+                    predictions = $.map(data, function (item) {
+                        return {
+                            value: item.title,
+                            id: item.id
+                        };
+                    });
+
+                    if (!predictions || typeof predictions === 'undefined' || predictions === '' || predictions.length === 0) {
+                        response($.map($.makeArray({
+                            value: $autocomplete.data('txt-noresults'),
+                            id: 0
+                        }), function (item) {
+                            return item;
+                        }));
+                    } else {
+                        response(predictions);
+                    }
+                }
+            })
+        };
+
+        settings.focus = function (event, ui) {
+        };
+
+        settings.select = function (event, ui) {
+            if (ui && ui.item && ui.item.id > 0) {
+                $idField.val(ui.item.id);
+            }
+        };
+
+        $autocomplete.autocomplete(settings).data('ui-autocomplete')._renderItem = _renderItem;
+    };
+
+    return {
+        city: city,
+        street: street,
+        school: school,
+        degreeOrSubject: degreeOrSubject,
+        init: init
+    }
+})();
